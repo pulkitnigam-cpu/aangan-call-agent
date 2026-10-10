@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import extractionSchema from "../agent/extraction-schema.json";
 import type { PromisedOutcome } from "./fit";
 import { parseExtractionObject } from "./schemas";
 import type { LeadFacts } from "./policy";
@@ -39,11 +38,9 @@ export function parseExtraction(input: unknown): ExtractedLead {
   return parseExtractionObject(input);
 }
 
-let schemaText: string | null = null;
-function schema(): string {
-  schemaText ??= readFileSync(path.join(process.cwd(), "agent", "extraction-schema.json"), "utf8");
-  return schemaText;
-}
+// Imported (not read from disk) so it is always bundled into the Vercel function.
+const SCHEMA_TEXT = JSON.stringify(extractionSchema, null, 2);
+const schema = () => SCHEMA_TEXT;
 
 /**
  * Calls Gemini to extract fields from a transcript. GEMINI_MODEL defaults to
