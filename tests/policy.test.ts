@@ -148,3 +148,18 @@ describe("price guardrail", () => {
     assert.ok(findPriceMentions("1 to 1.5 lakh would be significantly below what a project of that scope would cost").length > 0);
   });
 });
+
+describe("commercial size cap", () => {
+  const office = (size_sqft: number, intent: LeadFacts["intent"] = "unknown") =>
+    scoreLead(
+      { intent, project_kind: "office", scope_kind: "unknown", room_count: null, bhk: null, area: "Pimpri-Chinchwad", size_sqft,
+        budget_max_inr: null, deadline_date: null, site_available_in_weeks: null, decision_maker: "self" },
+      new Date("2026-10-10T12:00:00+05:30"),
+    );
+  it("far above ~3,000 sq ft (over double) is not a fit, even before scope is confirmed", () => {
+    assert.equal(office(45_000).score, "not_fit");
+  });
+  it("a little above the cap is left to a human to confirm", () => {
+    assert.notEqual(office(3_500, "design_and_execution").score, "not_fit");
+  });
+});

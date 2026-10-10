@@ -15,7 +15,9 @@ const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v
 export async function GET(request: Request) {
   await connection();
   if (!verifyCron(request.headers)) return Response.json({ error: "unauthorised" }, { status: 401 });
-  const sinceParam = new URL(request.url).searchParams.get("since");
+  const params = new URL(request.url).searchParams;
+  const sinceParam = params.get("since");
+  const withRaw = params.get("raw") === "1"; // debugging: Vaani's original payload
   const since = sinceParam && !Number.isNaN(Date.parse(sinceParam)) ? new Date(sinceParam) : new Date(0);
 
   const rows = await getSql()`
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
            c.promised_outcome, c.price_mentions, c.cost_inr::text as cost_inr, c.transcript, c.raw_payload, c.escalate, c.escalation_reason,
            l.id as lead_id, l.name, l.area, l.bhk, l.size_sqft, l.scope, l.scope_kind, l.intent, l.project_kind, l.timeline,
            l.deadline_date, l.budget, l.decision_maker, l.source, l.score, l.agent_score, l.score_reasons, l.handoff_notes,
-           l.status as lead_status, l.owner, l.needs_review, l.review_reason, l.open_questions, d.name as designer
+           l.status as lead_status, l.consultation_preference, l.owner, l.needs_review, l.review_reason, l.open_questions, d.name as designer
     from calls c
     left join leads l on l.id = c.lead_id
     left join designers d on d.id = l.designer_id
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
       lead: lead && {
         ...lead,
         deadline_date: r.deadline_date ? new Date(r.deadline_date).toISOString().slice(0, 10) : null,
-        intent: r.intent, project_kind: r.project_kind, budget: r.budget, decision_maker: r.decision_maker, source: r.source,
+        intent: r.intent, project_kind: r.project_kind, budget: r.budget, decision_maker: r.decision_maker, source: r.source, consultation_preference: r.consultation_preference,
         rulesScore: r.score, agentScore: r.agent_score, vaaniScore: (vaani.lead_score as string) ?? null,
         vaaniReason: (vaani.qualification_reason as string) ?? null,
         reasons: r.score_reasons, notes: r.handoff_notes, openQuestions: r.open_questions,
@@ -60,6 +62,7 @@ export async function GET(request: Request) {
       },
       qa: qaCall(r.transcript, { duration_sec: r.duration_sec, promised_outcome: r.promised_outcome, category: r.category }, lead),
       transcript: r.transcript,
+      ...(withRaw ? { raw: r.raw_payload } : {}),
     };
   });
 

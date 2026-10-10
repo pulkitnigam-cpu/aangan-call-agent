@@ -3,10 +3,10 @@
 Generated 2026-10-10 by `npm run eval`. Real Gemini extraction, then Nikhil's rules.
 
 - **Outcome accuracy (final, rules on Gemini's extraction): 39/40**
-- Gemini's own score, before the rules re-check: 33/38 of the scored enquiries
+- Gemini's own score, before the rules re-check: 34/38 of the scored enquiries
 - Qualified leads with a must-have missing: 9/24 (T02, T06, T11, T13, T14, W03, W05, W08, W09)
 - Price-like phrases said by the studio side: 1 (T10: "lakh") — these are the human front desk in Sept; the AI agent is held to zero
-- Gemini model: gemini-3.8-flash · 1,08,935 tokens · 235 s
+- Gemini model: gemini-3.8-flash · 1,08,997 tokens · 370 s
 
 | # | Channel | Expected | Rules (final) | Gemini's own | ✓ | Missing must-haves | Price said by studio | Why |
 |---|---|---|---|---|---|---|---|---|
@@ -17,7 +17,7 @@ Generated 2026-10-10 by `npm run eval`. Real Gemini extraction, then Nikhil's ru
 | F05 | Web Form | qualified | qualified | qualified | ✅ | — | — |  |
 | F06 | Web Form | qualified | qualified | qualified | ✅ | — | — |  |
 | F07 | Web Form | unclear | unclear | unclear | ✅ | — | — | caller is still exploring — no project yet |
-| F08 | Web Form | not_fit | not_fit | not_fit | ✅ | — | — | needs completion in ~3 weeks; we need at least 8 |
+| F08 | Web Form | not_fit | not_fit | unclear | ✅ | — | — | needs completion in ~3 weeks; we need at least 8 |
 | F09 | Web Form | qualified | qualified | qualified | ✅ | — | — |  |
 | F10 | Web Form | qualified | qualified | qualified | ✅ | — | — | volunteered budget may be tight for this scope |
 | T01 | Phone | qualified | qualified | qualified | ✅ | — | — |  |
@@ -28,12 +28,12 @@ Generated 2026-10-10 by `npm run eval`. Real Gemini extraction, then Nikhil's ru
 | T06 | Phone | qualified | qualified | qualified | ✅ | name | — |  |
 | T07 | Phone | not_fit | not_fit | not_fit | ✅ | — | — | location not given; needs completion in ~3 weeks; we need at least 8 |
 | T08 | Phone | missed call | missed call | — | ✅ | — | — | no conversation; system follows up |
-| T09 | Phone | existing client (escalate) | existing_client (escalate) | — | ✅ | — | — | Existing client whose designer Aryan has not replied in 5 days; demanding callback from Nikhil or senior person. |
+| T09 | Phone | existing client (escalate) | existing_client (escalate) | — | ✅ | — | — | Designer Aryan unresponsive for 5 days despite 3 messages and 2 calls; caller requested immediate callback from Nikhil or a senior person. |
 | T10 | Phone | not_fit | not_fit | not_fit | ✅ | — | lakh | volunteered budget is clearly below any project of this scope |
 | T11 | Phone | qualified | qualified | qualified | ✅ | name, timeline | — |  |
 | T12 | Phone | qualified | qualified | qualified | ✅ | — | — |  |
 | T13 | Phone | qualified | qualified | unclear | ✅ | name, timeline | — |  |
-| T14 | Phone | qualified | qualified | unclear | ✅ | name, timeline | — | caller is researching for the owners — confirm owners attend the consultation |
+| T14 | Phone | qualified | qualified | qualified | ✅ | name, timeline | — | caller is researching for the owners — confirm owners attend the consultation |
 | T15 | Phone | qualified | qualified | qualified | ✅ | — | — |  |
 | T16 | Phone | unclear | unclear | unclear | ✅ | — | — | scope not confirmed (design + execution?) |
 | T17 | Phone | qualified | qualified | qualified | ✅ | — | — |  |
@@ -48,5 +48,5 @@ Generated 2026-10-10 by `npm run eval`. Real Gemini extraction, then Nikhil's ru
 | W06 | WhatsApp | qualified | qualified | qualified | ✅ | — | — |  |
 | W07 | WhatsApp | not_fit | not_fit | not_fit | ✅ | — | — | gym interiors are outside our scope |
 | W08 | WhatsApp | qualified | qualified | qualified | ✅ | timeline | — |  |
-| W09 | WhatsApp | qualified | qualified | unclear | ✅ | timeline | — |  |
+| W09 | WhatsApp | qualified | qualified | qualified | ✅ | timeline | — |  |
 | W10 | WhatsApp | unclear | unclear | unclear | ✅ | — | — | caller is still exploring — no project yet |

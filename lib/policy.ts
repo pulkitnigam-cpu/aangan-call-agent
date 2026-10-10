@@ -210,6 +210,10 @@ export function scoreLead(f: LeadFacts, callAt: Date): ScoreResult {
   } else if (COMMERCIAL_KINDS.includes(f.project_kind) && f.size_sqft !== null && f.size_sqft < COMMERCIAL_MIN_SQFT) {
     realProject = "fail";
     reasons.push(`commercial space of ${f.size_sqft} sq ft is below our ~${COMMERCIAL_MIN_SQFT} sq ft minimum`);
+  } else if (COMMERCIAL_KINDS.includes(f.project_kind) && f.size_sqft !== null && f.size_sqft > COMMERCIAL_MAX_SQFT * 2) {
+    // "approximately 3,000" leaves room for a judgement call — not for double or more.
+    realProject = "fail";
+    reasons.push(`commercial space of ${f.size_sqft.toLocaleString("en-IN")} sq ft is far above our ~${COMMERCIAL_MAX_SQFT.toLocaleString("en-IN")} sq ft cap`);
   } else if (f.intent === "design_and_execution") {
     realProject = "pass";
     if (COMMERCIAL_KINDS.includes(f.project_kind) && f.size_sqft !== null && f.size_sqft > COMMERCIAL_MAX_SQFT) {
