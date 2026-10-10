@@ -199,3 +199,14 @@
 }
 .call-btn:hover { filter: brightness(1.08); }
 .call-btn.end { background: var(--critical); }
+
+/* Lead quality (rubric) */
+.aangan .grid-3-even { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.aangan .score-tile { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 12px; background: var(--chip); color: inherit; text-decoration: none; border-left: 4px solid var(--muted); }
+.aangan .score-tile:hover { outline: 2px solid var(--ring); }
+.aangan .score-tile.qualified, .aangan .tag.score.qualified { border-color: var(--good-text); }
+.aangan .score-tile.unclear { border-color: var(--series-1); }
+.aangan .score-tile.not_fit { border-color: var(--critical); }
+.aangan .tag.score { border: 1px solid var(--grid); }
+.aangan .tag.score.qualified { color: var(--good-text); }
+.aangan .tag.score.not_fit { color: var(--critical); }

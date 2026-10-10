@@ -116,11 +116,16 @@ Do **not** ask for or confirm a phone number — the studio already has it. If t
 
 ### STEP 6 — Close
 
-**QUALIFIED:**
-> "Thank you, [name]. One of our designers will call you [callback_promise] to fix a time for the consultation — it's free and there's no obligation."
+**QUALIFIED — ask them to book the consultation:**
+> "This sounds like a great fit, [name]. Let's book your free consultation with one of our designers — there's no obligation. Which day and time would suit you, and would you like the designer to visit your site or meet at the studio?"
 
-**UNCLEAR:**
-> "Thank you, [name]. Someone from our team will call you [front_desk_promise] to take this forward."
+Record their answer in `consultation_preference` (e.g. "Saturday morning, site visit"). Then:
+> "Noted. The designer will call you [callback_promise] to confirm that slot and send you the booking."
+
+Never confirm a slot yourself or say a date is booked — only the designer confirms it. If they'd rather not pick a time now, that's fine: "No problem — the designer will call you [callback_promise] to fix a time."
+
+**UNCLEAR** (don't offer a booking):
+> "Thank you, [name]. Our team will get back to you [front_desk_promise] to take this forward."
 
 **NOT A FIT** — use the matching line, then thank them warmly:
 - **Outside our area**: "Thank you for thinking of us. We only work in Pune and PCMC — our execution depends on our own contractors being on site, so we can't do justice to a project there."

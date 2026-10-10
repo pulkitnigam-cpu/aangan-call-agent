@@ -8,6 +8,11 @@ export interface Scope {
   designerId: string | null; // null = the whole studio
 }
 
+export const SCORES = ["qualified", "unclear", "not_fit"] as const;
+export type ScoreFilter = (typeof SCORES)[number];
+export const parseScore = (v: string | undefined): ScoreFilter | null => (SCORES.includes(v as ScoreFilter) ? (v as ScoreFilter) : null);
+export const SCORE_LABEL: Record<string, string> = { qualified: "Qualified", unclear: "Unclear", not_fit: "Not a fit" };
+
 export const RANGES = [7, 30, 90] as const;
 export type RangeDays = (typeof RANGES)[number];
 export const parseRange = (v: string | undefined): RangeDays => (RANGES.includes(Number(v) as RangeDays) ? (Number(v) as RangeDays) : 30);
@@ -26,6 +31,8 @@ export interface DashboardData {
   funnel: { stage: string; count: number }[];
   speed: { bucket: string; count: number; late: boolean }[];
   leads: LeadRow[];
+  /** Every call in the period by outcome, per Nikhil's rubric (plus the non-project calls). */
+  mix: { key: string; label: string; count: number }[];
   cost: { totalInr: number; calls: number; perQualifiedInr: number | null } | null; // admin only
   designers: { id: string; name: string }[]; // admin filter
 }
@@ -45,7 +52,7 @@ export interface LeadRow {
   designer_name: string | null;
 }
 
-export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: RangeDays, now = new Date()): Promise<DashboardData> {
+export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: RangeDays, now = new Date(), score: ScoreFilter | null = null): Promise<DashboardData> {
   const since = new Date(now.getTime() - days * 86_400_000);
   // The callback clock starts when the lead is assigned, or — for night leads —
   // two hours before the noon deadline (10am), so overnight hours don't count as "slow".
@@ -54,6 +61,10 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
   const mine = scope.designerId
     ? sql`and l.designer_id = ${scope.designerId}`
     : sql`and l.designer_id is not null`;
+  // The lead list and the rubric chart show every lead — including not-a-fit and
+  // front-desk leads that never reach a designer — unless one designer is picked.
+  const anyLead = scope.designerId ? sql`and l.designer_id = ${scope.designerId}` : sql``;
+  const byScore = score ? sql`and l.score = ${score}` : sql``;
 
   const [k] = await sql<{ leads: number; visits: number; won: number; median: number | null; on_time: number | null; waiting: number }[]>`
     select
@@ -111,10 +122,32 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
     select l.id, l.name, l.area, l.bhk, l.status, l.score, l.priority, l.needs_review,
            l.due_at, l.first_action_at, l.created_at, d.name as designer_name
     from leads l left join designers d on d.id = l.designer_id
-    where l.created_at >= ${since} ${mine}
+    where l.created_at >= ${since} ${anyLead} ${byScore}
     order by (l.status = 'assigned' and l.first_action_at is null) desc, l.created_at desc
     limit 60
   `;
+
+  const [m] = await sql<{ qualified: number; unclear: number; not_fit: number; existing_client: number; vendor: number; spam: number }[]>`
+    select
+      (select count(*)::int from leads l where l.created_at >= ${since} ${anyLead} and l.score = 'qualified') as qualified,
+      (select count(*)::int from leads l where l.created_at >= ${since} ${anyLead} and l.score = 'unclear') as unclear,
+      (select count(*)::int from leads l where l.created_at >= ${since} ${anyLead} and l.score = 'not_fit') as not_fit,
+      (select count(*)::int from calls where started_at >= ${since} and category = 'existing_client' and ${!scope.designerId}) as existing_client,
+      (select count(*)::int from calls where started_at >= ${since} and category = 'vendor' and ${!scope.designerId}) as vendor,
+      (select count(*)::int from calls where started_at >= ${since} and category = 'spam' and ${!scope.designerId}) as spam
+  `;
+  const mix = [
+    { key: "qualified", label: "Qualified", count: m.qualified },
+    { key: "unclear", label: "Unclear", count: m.unclear },
+    { key: "not_fit", label: "Not a fit", count: m.not_fit },
+    ...(scope.designerId
+      ? []
+      : [
+          { key: "existing_client", label: "Existing client", count: m.existing_client },
+          { key: "vendor", label: "Vendor / sales", count: m.vendor },
+          { key: "spam", label: "Spam / wrong number", count: m.spam },
+        ]),
+  ];
 
   let cost: DashboardData["cost"] = null;
   // The designer picker needs the full list in every view.
@@ -153,6 +186,7 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
       { bucket: "Late", count: s.late, late: true },
     ],
     leads,
+    mix,
     cost,
     designers,
   };

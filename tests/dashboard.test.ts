@@ -87,3 +87,17 @@ describe("night leads called early", () => {
     assert.equal(d.speed[0].count, 1); // "< 30 min"
   });
 });
+
+describe("leads by rubric outcome", () => {
+  it("counts qualified / unclear / not a fit (incl. leads no designer gets) and filters the list", async () => {
+    await handleCallEnded(env.sql, endedCall(DAY, { name: "Q" }, { callerPhone: "9855555555" }), {}, at(DAY));
+    await handleCallEnded(env.sql, endedCall(DAY, { name: "N", area: "Nashik" }, { callerPhone: "9866666666" }), {}, at(DAY));
+    const d = await getDashboardData(env.sql, { designerId: null }, 7, plusMin(DAY, 10));
+    const count = (k: string) => d.mix.find((m) => m.key === k)!.count;
+    assert.equal(count("qualified"), 1);
+    assert.equal(count("not_fit"), 1, "a not-a-fit lead has no designer but is still counted");
+    assert.equal(d.leads.length, 2);
+    const onlyNotFit = await getDashboardData(env.sql, { designerId: null }, 7, plusMin(DAY, 10), "not_fit");
+    assert.deepEqual(onlyNotFit.leads.map((l) => l.name), ["N"]);
+  });
+});

@@ -5,7 +5,7 @@ import "../ui.css";
 import { BarList, ColumnChart } from "@/components/dashboard/Charts";
 import { DesignerFilter } from "@/components/dashboard/DesignerFilter";
 import { Icon } from "@/components/dashboard/Icons";
-import { getDashboardData, parseRange, RANGES, type LeadRow } from "@/lib/dashboard";
+import { getDashboardData, parseRange, parseScore, RANGES, SCORE_LABEL, SCORES, type LeadRow } from "@/lib/dashboard";
 import { getSql } from "@/lib/db";
 import { fmtMinutes, fmtTime, initials, isUuid, STATUS_LABEL } from "@/lib/format";
 
@@ -40,9 +40,12 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard
   // No sign-in (owner's decision): everyone sees the studio view and can pick a designer.
   const filter = isUuid(sp.designer) ? sp.designer : null;
   const designerId = filter;
-  const d = await getDashboardData(getSql(), { designerId }, range);
+  const score = parseScore(typeof sp.score === "string" ? sp.score : undefined);
+  const d = await getDashboardData(getSql(), { designerId }, range, undefined, score);
   const now = new Date();
   const q = (r: number) => `/dashboard?range=${r}${filter ? `&designer=${filter}` : ""}`;
+  const qs = (s: string | null) => `${q(range)}${s ? `&score=${s}` : ""}#leads`;
+  const totalCalls = d.mix.reduce((a, m) => a + m.count, 0);
 
   return (
     <>
@@ -62,6 +65,25 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard
         <Stat icon={<Icon.visit />} label="Visits booked" value={d.kpis.visits} sub={d.kpis.won ? `${d.kpis.won} won` : undefined} />
         <Stat icon={<Icon.clock />} label="Median callback" value={fmtMinutes(d.kpis.medianCallbackMin)} sub="Goal ≤ 2h" tone={d.kpis.medianCallbackMin !== null && d.kpis.medianCallbackMin > 120 ? "bad" : "good"} />
         <Stat icon={<Icon.check />} label="On time" value={d.kpis.onTimePct === null ? "—" : `${d.kpis.onTimePct}%`} sub="Called before the promised time" tone={d.kpis.onTimePct !== null && d.kpis.onTimePct < 90 ? "bad" : undefined} />
+      </section>
+
+      <section className="grid-2">
+        <div className="card">
+          <div className="card-title">Calls by outcome <span style={{ fontWeight: 400 }}>Nikhil&apos;s rubric · {totalCalls}</span></div>
+          <BarList data={d.mix.map((m) => ({ label: m.label, value: m.count }))} />
+        </div>
+        <div className="card">
+          <div className="card-title">Lead quality</div>
+          <div className="grid-3-even">
+            {SCORES.map((s) => (
+              <Link key={s} href={qs(s)} className={`score-tile ${s}`}>
+                <span className="stat-value">{d.mix.find((m) => m.key === s)?.count ?? 0}</span>
+                <span className="stat-label">{SCORE_LABEL[s]}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="stat-sub" style={{ marginTop: 10 }}>Qualified → designer + booking link · Unclear → front desk · Not a fit → politely declined</div>
+        </div>
       </section>
 
       <section className="grid-2">
@@ -96,8 +118,17 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard
         )}
       </section>
 
-      <section className="card">
-        <div className="card-title">Leads <span style={{ fontWeight: 400 }}>{d.leads.length}</span></div>
+      <section className="card" id="leads">
+        <div className="card-title" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span>Leads <span style={{ fontWeight: 400 }}>{d.leads.length}</span></span>
+          <span className="spacer" />
+          <nav className="pills" aria-label="Filter by score">
+            <Link href={qs(null)} className="pill" aria-current={!score ? "page" : undefined}>All</Link>
+            {SCORES.map((s) => (
+              <Link key={s} href={qs(s)} className="pill" aria-current={score === s ? "page" : undefined}>{SCORE_LABEL[s]}</Link>
+            ))}
+          </nav>
+        </div>
         <LeadList leads={d.leads} now={now} showDesigner={!filter} emptyText="No leads in this period yet." />
       </section>
     </>
@@ -133,7 +164,7 @@ function LeadList({ leads, now, showDesigner, emptyText }: { leads: LeadRow[]; n
             ) : (
               <span className={`tag${["visit_booked", "visit_done", "won"].includes(l.status) ? " done" : ""}`}><span className="dot" />{STATUS_LABEL[l.status] ?? l.status}</span>
             )}
-            <span className="tag hide-sm">{l.needs_review ? "Review" : l.score === "qualified" ? "Qualified" : l.score === "unclear" ? "Unclear" : "Not a fit"}</span>
+            <span className={`tag score ${l.score}`}>{SCORE_LABEL[l.score] ?? l.score}{l.needs_review ? " · review" : ""}</span>
           </Link>
         );
       })}
