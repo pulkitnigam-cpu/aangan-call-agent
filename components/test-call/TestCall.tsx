@@ -23,6 +23,7 @@ export function TestCall() {
   const [secs, setSecs] = useState(0);
   const [error, setError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  const [endedBy, setEndedBy] = useState("");
   const roomRef = useRef<Room | null>(null);
   const callRef = useRef<{ id: string; startedAt: number } | null>(null);
   const endingRef = useRef(false);
@@ -51,7 +52,8 @@ export function TestCall() {
       room.on(RoomEvent.TrackSubscribed, (track) => {
         if (track.kind === Track.Kind.Audio) document.body.appendChild(track.attach());
       });
-      room.on(RoomEvent.Disconnected, () => void finish()); // the agent hung up (or the 4-min cap)
+      room.on(RoomEvent.Disconnected, (reason) => void finish(`room closed (${reason ?? "unknown"})`)); // the agent hung up, or the 4-min cap
+      room.on(RoomEvent.ParticipantDisconnected, (p) => console.info("[test-call] left:", p.identity));
       await room.connect(body.url, body.token);
       await room.localParticipant.setMicrophoneEnabled(true);
       callRef.current = { id: body.room, startedAt: Date.now() };
@@ -63,15 +65,16 @@ export function TestCall() {
     }
   }
 
-  async function finish() {
+  async function finish(endedBy = "you pressed End") {
     if (endingRef.current || !callRef.current) return;
     endingRef.current = true;
     const { id, startedAt } = callRef.current;
     const durationSec = Math.round((Date.now() - startedAt) / 1000);
     roomRef.current?.disconnect();
     document.querySelectorAll("audio").forEach((a) => a.remove());
+    setEndedBy(endedBy);
     setPhase("processing");
-    await fetch("/api/test-call/finish", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ room: id, durationSec }) }).catch(() => {});
+    await fetch("/api/test-call/finish", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ room: id, durationSec, endedBy }) }).catch(() => {});
     // Vaani needs a little while to finish the transcript and analysis.
     for (let i = 0; i < 40; i++) {
       await new Promise((r) => setTimeout(r, 6000));
@@ -100,7 +103,7 @@ export function TestCall() {
           <>
             <p className="stat-label">On the call</p>
             <p className="stat-value">{mmss(secs)}</p>
-            <button className="call-btn end" onClick={finish}>End call</button>
+            <button className="call-btn end" onClick={() => finish()}>End call</button>
           </>
         ) : (
           <>
@@ -108,6 +111,7 @@ export function TestCall() {
             <p className="stat-sub">Getting the transcript from Vaani and sending it to the designer. Usually under a minute.</p>
           </>
         )}
+        {endedBy && phase !== "live" && <p className="stat-sub" style={{ marginTop: 8 }}>Call ended: {endedBy}</p>}
         {error && <p style={{ color: "var(--critical)", marginTop: 12 }}>{error}</p>}
         {phase === "done" && result && (
           <p style={{ marginTop: 14 }}>
