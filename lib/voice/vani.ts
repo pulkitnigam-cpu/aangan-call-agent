@@ -99,10 +99,16 @@ export function parseVaaniWebhook(body: unknown): VaaniEvent {
   if (name === "call_postprocessing") {
     const id = str(b.call_id || data.call_id || data.room_name);
     if (!id) return { kind: "ignored", name };
-    // Milliseconds in this event; if absent, other spellings, then the transcript's own timestamps.
-    const ms = num(data.call_duration, data.duration_ms, data.call_duration_ms, b.call_duration);
-    const durationSec = Math.round(ms ? ms / 1000 : num(data.duration, data.duration_seconds) || transcriptSpanSec(data.transcript));
-    const finished = new Date(str(b.timestamp) || Date.now());
+    // Best: Vaani's own start/end stamps. Then call_duration — the docs say milliseconds but live
+    // calls send seconds (150 = 2.5 min), so anything above 600 is read as ms (calls cap at 4 min).
+    // Last resort: the transcript's own timestamps.
+    const pickedUp = Date.parse(str(data.picked_up_at));
+    const hungUp = Date.parse(str(data.call_ended_at));
+    const raw = num(data.call_duration, data.duration, data.duration_seconds, b.call_duration, data.duration_ms, data.call_duration_ms);
+    const durationSec = Math.round(
+      pickedUp && hungUp && hungUp > pickedUp ? (hungUp - pickedUp) / 1000 : raw ? (raw > 600 ? raw / 1000 : raw) : transcriptSpanSec(data.transcript),
+    );
+    const finished = new Date(str(data.call_ended_at) || str(b.timestamp) || Date.now());
     const endedAt = Number.isNaN(finished.getTime()) ? new Date() : finished;
     const turns = parseTranscript(data.transcript);
     const hasFields = Object.keys(obj(data.entities)).length > 0 || Object.keys(obj(data.dispositions)).length > 0;

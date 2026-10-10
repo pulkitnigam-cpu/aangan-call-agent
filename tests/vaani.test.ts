@@ -221,3 +221,13 @@ describe("call length when Vaani sends no duration", () => {
     assert.equal(e.kind === "ended" && e.durationSec, 95);
   });
 });
+
+describe("call length as Vaani really sends it", () => {
+  it("uses picked_up_at → call_ended_at; call_duration in seconds also works", () => {
+    const live = { ...POSTPROCESSING.data, call_duration: 150, picked_up_at: "2026-10-10T16:03:06.944Z", call_ended_at: "2026-10-10T16:05:38.784Z" };
+    const p = parseVaaniWebhook({ ...POSTPROCESSING, data: live });
+    assert.equal(p.kind === "postprocessed" && p.event.durationSec, 152);
+    const noStamps = parseVaaniWebhook({ ...POSTPROCESSING, data: { ...POSTPROCESSING.data, call_duration: 150 } });
+    assert.equal(noStamps.kind === "postprocessed" && noStamps.event.durationSec, 150);
+  });
+});
