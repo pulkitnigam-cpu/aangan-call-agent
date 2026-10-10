@@ -154,7 +154,7 @@ describe("browser test calls (no caller number)", () => {
   beforeEach(async () => { await env.reset(); tg = fakeTelegram(); });
   afterEach(() => tg.restore());
 
-  it("a qualified web-test call still reaches the designer (flagged, not rerouted)", async () => {
+  it("a qualified web-test call reaches the designer without a review flag", async () => {
     const id = "webrtc-test-001";
     await handleCallStarted(env.sql, { providerCallId: id, callerPhone: "" }, new Date("2026-10-07T15:00:00+05:30"));
     const p = parseVaaniWebhook({ ...POSTPROCESSING, call_id: id, data: { ...POSTPROCESSING.data, call_id: id, room_name: id } });
@@ -164,7 +164,7 @@ describe("browser test calls (no caller number)", () => {
     assert.equal(tg.messagesTo(CHAT.rohan).length, 1);
     const [lead] = await env.sql`select phone, needs_review, review_reason from leads`;
     assert.equal(lead.phone, "unknown");
-    assert.match(lead.review_reason, /No callback number/);
+    assert.equal(lead.needs_review, false);
   });
 });
 
