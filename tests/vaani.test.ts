@@ -209,3 +209,15 @@ describe("browser test calls pulled from Vaani's API (no webhook)", () => {
     assert.equal((await importWebCall(env.sql, "webrtc-1-abc", new Date())).state, "unknown");
   });
 });
+
+describe("call length when Vaani sends no duration", () => {
+  it("falls back to the transcript's timestamps (and handles midnight)", async () => {
+    const { transcriptSpanSec } = await import("../lib/voice/vani");
+    const p = parseVaaniWebhook({ ...POSTPROCESSING, data: { ...POSTPROCESSING.data, call_duration: undefined } });
+    assert.equal(p.kind === "postprocessed" && p.event.durationSec, 19); // 15:00:14 → 15:00:33
+    assert.equal(transcriptSpanSec("[23:59:50] AGENT: hi\n[00:00:10] USER: hello"), 20);
+    assert.equal(transcriptSpanSec("AGENT: no stamps"), 0);
+    const e = parseVaaniWebhook({ event: "call_ended", room_name: "r1", duration_ms: 95_000 });
+    assert.equal(e.kind === "ended" && e.durationSec, 95);
+  });
+});

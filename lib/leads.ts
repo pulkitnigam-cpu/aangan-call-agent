@@ -97,7 +97,7 @@ export async function handleCallStarted(sql: Sql, input: CallStartedEvent, now: 
 /** Vaani's call_ended: record when and how it ended. call_postprocessing follows with the details. */
 export async function handleCallFinished(sql: Sql, providerCallId: string, durationSec: number, now: Date): Promise<void> {
   await sql`
-    update calls set ended_at = coalesce(ended_at, ${now}), duration_sec = coalesce(duration_sec, ${durationSec})
+    update calls set ended_at = coalesce(ended_at, ${now}), duration_sec = greatest(coalesce(duration_sec, 0), ${durationSec})
     where vani_call_id = ${providerCallId} and processed_at is null
   `;
 }
@@ -226,10 +226,10 @@ export async function handleCallEnded(sql: Sql, input: CallEndedEvent, deps: Pos
   if (!call) return { kind: "duplicate" };
 
   const callerSpoke = input.turns.some((t) => t.role === "caller");
-  if (input.status !== "completed" || (!input.extraction && (!callerSpoke || input.durationSec < 20))) {
+  if (input.status !== "completed" || (!input.extraction && (!callerSpoke || (input.durationSec > 0 && input.durationSec < 20)))) {
     const status = input.status === "failed" ? "failed" : "dropped";
     await sql`
-      update calls set status = ${status}, ended_at = ${input.endedAt}, duration_sec = ${input.durationSec},
+      update calls set status = ${status}, ended_at = ${input.endedAt}, duration_sec = greatest(coalesce(duration_sec, 0), ${input.durationSec}),
         caller_phone = coalesce(${normalizePhone(input.callerPhone)}, caller_phone)
       where id = ${call.id}
     `;
@@ -265,7 +265,7 @@ export async function handleCallEnded(sql: Sql, input: CallEndedEvent, deps: Pos
   // Declined recording: keep only the structured fields, never the words.
   await sql`
     update calls set
-      status = 'completed', ended_at = ${input.endedAt}, duration_sec = ${input.durationSec},
+      status = 'completed', ended_at = ${input.endedAt}, duration_sec = greatest(coalesce(duration_sec, 0), ${input.durationSec}),
       caller_phone = ${phone ?? (input.callerPhone || "unknown")},
       recording_consent = ${consent},
       transcript = ${consent === false ? null : transcript},

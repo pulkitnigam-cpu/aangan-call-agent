@@ -62,6 +62,23 @@ export function toExtraction(data: Obj) {
   return parseExtraction(merged);
 }
 
+const num = (...vs: unknown[]) => {
+  for (const v of vs) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 0;
+};
+
+/** Seconds between the first and last "[hh:mm:ss]" stamps — fallback when Vaani sends no duration. */
+export function transcriptSpanSec(t: unknown): number {
+  if (typeof t !== "string") return 0;
+  const stamps = [...t.matchAll(/\[(\d{1,2}):(\d{2}):(\d{2})\]/g)].map((m) => +m[1] * 3600 + +m[2] * 60 + +m[3]);
+  if (stamps.length < 2) return 0;
+  const span = stamps[stamps.length - 1] - stamps[0];
+  return span >= 0 ? span : span + 86_400; // crossed midnight
+}
+
 export function parseVaaniWebhook(body: unknown): VaaniEvent {
   const b = obj(body);
   const name = str(b.event);
@@ -75,13 +92,16 @@ export function parseVaaniWebhook(body: unknown): VaaniEvent {
   if (name === "call_ended") {
     const id = str(b.room_name || b.call_id);
     if (!id) return { kind: "ignored", name };
-    return { kind: "ended", providerCallId: id, durationSec: Math.round(Number(b.call_duration) || 0), endReason: str(b.end_reason) };
+    const sec = num(b.call_duration, b.duration, b.duration_seconds) || num(b.duration_ms, b.call_duration_ms) / 1000;
+    return { kind: "ended", providerCallId: id, durationSec: Math.round(sec), endReason: str(b.end_reason) };
   }
 
   if (name === "call_postprocessing") {
     const id = str(b.call_id || data.call_id || data.room_name);
     if (!id) return { kind: "ignored", name };
-    const durationSec = Math.round((Number(data.call_duration) || 0) / 1000); // milliseconds here
+    // Milliseconds in this event; if absent, other spellings, then the transcript's own timestamps.
+    const ms = num(data.call_duration, data.duration_ms, data.call_duration_ms, b.call_duration);
+    const durationSec = Math.round(ms ? ms / 1000 : num(data.duration, data.duration_seconds) || transcriptSpanSec(data.transcript));
     const finished = new Date(str(b.timestamp) || Date.now());
     const endedAt = Number.isNaN(finished.getTime()) ? new Date() : finished;
     const turns = parseTranscript(data.transcript);
