@@ -382,8 +382,10 @@ export async function handleCallEnded(sql: Sql, input: CallEndedEvent, deps: Pos
   }
 
   const { route, review } = decideRoute(promised, effectiveRules);
-  const finalReview = review ?? (phone ? null : "No usable callback number was captured.");
-  await routeLead(sql, lead, phone ? route : "front_desk", finalReview, input.startedAt, now);
+  // No number (e.g. a browser test call, or a withheld ID the caller didn't fill in):
+  // still route normally — just flag it, so the lead isn't lost to the front desk.
+  const finalReview = review ?? (phone ? null : "No callback number captured — check the transcript for one.");
+  await routeLead(sql, lead, route, finalReview, input.startedAt, now);
 
   const [current] = await sql<Lead[]>`select * from leads where id = ${lead.id}`;
   try {
@@ -399,7 +401,7 @@ export async function handleCallEnded(sql: Sql, input: CallEndedEvent, deps: Pos
   } catch (err) {
     console.error(`[post-call ${input.providerCallId}] HubSpot sync failed`, err); // never blocks the lead
   }
-  return { kind: "lead", leadId: lead.id, route: phone ? route : "front_desk", merged: !!existing, review: finalReview };
+  return { kind: "lead", leadId: lead.id, route, merged: !!existing, review: finalReview };
 }
 
 /**

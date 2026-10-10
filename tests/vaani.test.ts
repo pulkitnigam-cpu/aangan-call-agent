@@ -145,3 +145,25 @@ describe("Vaani call, end to end", () => {
     assert.equal(again.kind, "duplicate", "Vaani retries are harmless");
   });
 });
+
+describe("browser test calls (no caller number)", () => {
+  let env: Awaited<ReturnType<typeof startTestDb>>;
+  let tg: ReturnType<typeof fakeTelegram>;
+  beforeAll(async () => { env = await startTestDb(); });
+  afterAll(async () => { await env.stop(); });
+  beforeEach(async () => { await env.reset(); tg = fakeTelegram(); });
+  afterEach(() => tg.restore());
+
+  it("a qualified web-test call still reaches the designer (flagged, not rerouted)", async () => {
+    const id = "webrtc-test-001";
+    await handleCallStarted(env.sql, { providerCallId: id, callerPhone: "" }, new Date("2026-10-07T15:00:00+05:30"));
+    const p = parseVaaniWebhook({ ...POSTPROCESSING, call_id: id, data: { ...POSTPROCESSING.data, call_id: id, room_name: id } });
+    if (p.kind !== "postprocessed") throw new Error("expected postprocessed");
+    const r = await handleCallEnded(env.sql, p.event, {}, new Date("2026-10-07T15:04:30+05:30"));
+    assert.equal(r.kind === "lead" && r.route, "designer");
+    assert.equal(tg.messagesTo(CHAT.rohan).length, 1);
+    const [lead] = await env.sql`select phone, needs_review, review_reason from leads`;
+    assert.equal(lead.phone, "unknown");
+    assert.match(lead.review_reason, /No callback number/);
+  });
+});

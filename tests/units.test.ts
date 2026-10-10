@@ -172,3 +172,22 @@ describe("price guardrail: Hindi/Marathi number words", () => {
     for (const s of ["paanch sau rupaye", "पाँच सौ रुपये", "पाचशे रुपये"]) assert.ok(findPriceMentions(s).length > 0, s);
   });
 });
+
+describe("automatic guardrail check per call", () => {
+  const lead = { name: "Priya", area: "Baner", bhk: 2, size_sqft: null, scope: "full home", scope_kind: "full_home", timeline: "by March", deadline_date: null, score: "qualified" };
+  const good = "Agent: Hi, this is Aangan Studio's assistant. I'm an AI, and this call is recorded to help our designers. Is that okay?\nCaller: Yes.\nAgent: How can I help?";
+  it("passes a call that follows the rules", async () => {
+    const { qaCall } = await import("../lib/qa");
+    const q = qaCall(good, { duration_sec: 200, promised_outcome: "designer_callback", category: "new_project" }, lead);
+    assert.equal(q.passed, true);
+    assert.equal(q.mustHavesCaptured, 5);
+    assert.equal(q.promiseMatchesRules, true);
+  });
+  it("fails on a price, a missing disclosure, or going over 4 minutes", async () => {
+    const { qaCall } = await import("../lib/qa");
+    assert.equal(qaCall(good + "\nAgent: It's usually 2,000 a sq ft.", { duration_sec: 200, promised_outcome: null, category: "new_project" }, lead).passed, false);
+    assert.equal(qaCall("Agent: Hello, Aangan Studio.\nCaller: Hi", { duration_sec: 100, promised_outcome: null, category: "new_project" }, lead).aiDisclosed, false);
+    assert.equal(qaCall(good, { duration_sec: 300, promised_outcome: null, category: "new_project" }, lead).passed, false);
+    assert.equal(qaCall(good, { duration_sec: 200, promised_outcome: "designer_callback", category: "new_project" }, { ...lead, score: "not_fit" }).promiseMatchesRules, false);
+  });
+});

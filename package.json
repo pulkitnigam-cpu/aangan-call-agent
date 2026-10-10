@@ -17,7 +17,8 @@
     "vaani:setup": "tsx scripts/vaani-setup.ts",
     "eval": "tsx scripts/eval-transcripts.ts",
     "telegram:webhook": "tsx scripts/telegram-set-webhook.ts",
-    "calendly:subscribe": "tsx scripts/calendly-subscribe.ts"
+    "calendly:subscribe": "tsx scripts/calendly-subscribe.ts",
+    "report": "tsx scripts/calls-report.ts"
   },
   "dependencies": {
     "next": "16.4.0",
