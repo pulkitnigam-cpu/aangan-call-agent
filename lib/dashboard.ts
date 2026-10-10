@@ -49,6 +49,7 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
   const since = new Date(now.getTime() - days * 86_400_000);
   // The callback clock starts when the lead is assigned, or — for night leads —
   // two hours before the noon deadline (10am), so overnight hours don't count as "slow".
+  // A callback made before the clock starts (e.g. the same night) counts as 0, not negative.
   const clockStart = sql`greatest(l.assigned_at, l.due_at - interval '2 hours')`;
   const mine = scope.designerId
     ? sql`and l.designer_id = ${scope.designerId}`
@@ -60,7 +61,7 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
       count(*) filter (where l.status in ('visit_booked', 'visit_done', 'won'))::int as visits,
       count(*) filter (where l.status = 'won')::int as won,
       percentile_cont(0.5) within group (
-        order by extract(epoch from (l.first_action_at - ${clockStart})) / 60
+        order by greatest(0, extract(epoch from (l.first_action_at - ${clockStart})) / 60)
       ) filter (where l.first_action_at is not null) as median,
       round(100.0 * count(*) filter (where l.first_action_at is not null and l.first_action_at <= l.due_at)
         / nullif(count(*) filter (where l.first_action_at is not null or l.due_at < ${now}), 0)) as on_time,
@@ -93,7 +94,7 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
 
   const [s] = await sql<{ b30: number; b60: number; b120: number; late: number }[]>`
     with t as (
-      select extract(epoch from (coalesce(l.first_action_at, ${now}) - ${clockStart})) / 60 as mins,
+      select greatest(0, extract(epoch from (coalesce(l.first_action_at, ${now}) - ${clockStart})) / 60) as mins,
              l.first_action_at, l.due_at
       from leads l
       where l.created_at >= ${since} ${mine} and l.assigned_at is not null and l.due_at is not null

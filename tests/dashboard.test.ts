@@ -74,3 +74,16 @@ describe("designer dashboard data", () => {
     assert.equal(parseRange("365"), 30);
   });
 });
+
+describe("night leads called early", () => {
+  it("a same-night callback counts as 0 minutes, never negative", async () => {
+    const NIGHT = "2026-10-10T20:51:00+05:30"; // after hours → clock starts 10am next day
+    const r = await handleCallEnded(env.sql, endedCall(NIGHT, { name: "Rahul" }, { callerPhone: "9844444444" }), {}, at(NIGHT));
+    const id = (r as { leadId: string }).leadId;
+    const [{ designer_id }] = await env.sql<{ designer_id: string }[]>`select designer_id from leads where id = ${id}`;
+    await tap(`c:${id}`, (await env.sql<{ telegram_chat_id: string }[]>`select telegram_chat_id from designers where id = ${designer_id}`)[0].telegram_chat_id, plusMin(NIGHT, 2));
+    const d = await getDashboardData(env.sql, { designerId: null }, 7, plusMin(NIGHT, 10));
+    assert.equal(d.kpis.medianCallbackMin, 0);
+    assert.equal(d.speed[0].count, 1); // "< 30 min"
+  });
+});

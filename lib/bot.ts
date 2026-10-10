@@ -141,7 +141,7 @@ export async function answerQuestion(sql: Sql, asker: Asker, text: string, class
           count(*) filter (where l.status in ('visit_booked', 'visit_done', 'won'))::int as visits,
           count(*) filter (where l.status = 'won')::int as won,
           count(*) filter (where l.status = 'assigned' and l.first_action_at is null)::int as waiting,
-          percentile_cont(0.5) within group (order by extract(epoch from (l.first_action_at - greatest(l.assigned_at, l.due_at - interval '2 hours'))) / 60)
+          percentile_cont(0.5) within group (order by greatest(0, extract(epoch from (l.first_action_at - greatest(l.assigned_at, l.due_at - interval '2 hours'))) / 60))
             filter (where l.first_action_at is not null) as median
         from leads l where l.created_at >= ${from} ${mine}
       `;
