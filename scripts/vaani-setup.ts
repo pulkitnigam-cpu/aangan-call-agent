@@ -132,6 +132,8 @@ const persona = {
           model: process.env.VANI_LLM_MODEL || "gemini-3.5-flash", // the model in Vaani's own docs example; check the dashboard list
           parameters: { temperature: 0.3, top_p: 1, max_tokens: 400 }, // low temperature: stick to the rules
         },
+        // Vaani's default fallback is Azure, which Vaani has disabled — updates are refused while it's set.
+        fallback: { provider: "openai", model: "gpt-4o-mini", parameters: { temperature: 0.3, top_p: 1, max_tokens: 400 } },
       },
     },
   },

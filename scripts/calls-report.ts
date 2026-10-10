@@ -34,6 +34,12 @@ const cell = (v: unknown) => String(v ?? "—").replace(/\|/g, "/").replace(/\n/
 async function main() {
   const since = process.argv[2];
   const url = `${base!.replace(/\/+$/, "")}/api/admin/report${since ? `?since=${encodeURIComponent(since)}` : ""}`;
+  // First pull any browser test call that finished but wasn't fetched from Vaani yet.
+  const imp = await fetch(`${base!.replace(/\/+$/, "")}/api/admin/import`, { method: "POST", headers: { authorization: `Bearer ${secret}` } });
+  if (imp.ok) {
+    const { imported } = (await imp.json()) as { imported: { state: string }[] };
+    if (imported.length) console.log(`pulled from Vaani: ${imported.filter((x) => x.state === "done").length}/${imported.length} pending calls`);
+  }
   const res = await fetch(url, { headers: { authorization: `Bearer ${secret}` } });
   if (!res.ok) throw new Error(`report endpoint → ${res.status}`);
   const { summary: s, calls, generatedAt } = (await res.json()) as { summary: Record<string, unknown>; calls: Call[]; generatedAt: string };

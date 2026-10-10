@@ -21,6 +21,7 @@
     "report": "tsx scripts/calls-report.ts"
   },
   "dependencies": {
+    "livekit-client": "2.22.3",
     "next": "16.4.0",
     "postgres": "^3.4.9",
     "react": "19.3.0",

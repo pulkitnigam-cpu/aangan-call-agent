@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-10-10T14:44:06.086Z",
+  "summary": {
+    "calls": 0,
+    "completed": 0,
+    "dropped": 0,
+    "byCategory": {
+      "new_project": 0,
+      "existing_client": 0,
+      "vendor": 0,
+      "spam": 0
+    },
+    "byScore": {
+      "qualified": 0,
+      "unclear": 0,
+      "not_fit": 0
+    },
+    "guardrailsPassed": 0,
+    "aiDisclosed": 0,
+    "consentAsked": 0,
+    "priceLeaks": 0,
+    "overCap": 0,
+    "promiseMatchesRules": "0/0",
+    "rulesVsVaani": "0/0",
+    "avgMustHaves": null,
+    "avgDurationSec": null,
+    "totalCostInr": 0
+  },
+  "calls": []
+}

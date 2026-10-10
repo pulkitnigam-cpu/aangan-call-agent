@@ -167,3 +167,45 @@ describe("browser test calls (no caller number)", () => {
     assert.match(lead.review_reason, /No callback number/);
   });
 });
+
+describe("browser test calls pulled from Vaani's API (no webhook)", () => {
+  let env: Awaited<ReturnType<typeof startTestDb>>;
+  let tg: ReturnType<typeof fakeTelegram>;
+  let details: Record<string, unknown>;
+  beforeAll(async () => { env = await startTestDb(); });
+  afterAll(async () => { await env.stop(); });
+  beforeEach(async () => {
+    await env.reset();
+    tg = fakeTelegram();
+    process.env.VANI_API_KEY = "test-key";
+    const tgFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const u = String(url);
+      if (u.startsWith("https://api.vaanivoice.ai/api/call_details/")) return new Response(JSON.stringify(details));
+      if (u.startsWith("https://api.vaanivoice.ai/api/transcript/")) return new Response(JSON.stringify({ transcript: "not found" }), { status: 404 });
+      return tgFetch(url, init);
+    }) as typeof fetch;
+  });
+  afterEach(() => tg.restore());
+
+  it("waits while Vaani is still processing, then makes the lead and reaches the designer once", async () => {
+    const { importWebCall } = await import("../lib/voice/import");
+    const id = "webrtc-1791644542-d03c98c1";
+    await handleCallStarted(env.sql, { providerCallId: id, callerPhone: "" }, new Date("2026-10-10T15:00:00+05:30"));
+    await handleCallFinished(env.sql, id, 200, new Date("2026-10-10T15:03:20+05:30"));
+
+    details = { transcription: "Transcription not available yet", entity: "not available", summary: "not available", call_eval_tag: null };
+    assert.equal((await importWebCall(env.sql, id, new Date("2026-10-10T15:03:30+05:30"))).state, "waiting");
+
+    details = { transcription: POSTPROCESSING.data.transcript, entity: { ...POSTPROCESSING.data.entities, ...POSTPROCESSING.data.dispositions }, summary: POSTPROCESSING.data.summary, call_eval_tag: null };
+    const r = await importWebCall(env.sql, id, new Date("2026-10-10T15:04:00+05:30"));
+    assert.equal(r.state, "done");
+    assert.equal(tg.messagesTo(CHAT.rohan).length, 1); // Baner → Rohan
+    const [call] = await env.sql`select duration_sec, transcript is not null as has_t from calls where vani_call_id = ${id}`;
+    assert.equal(call.duration_sec, 200);
+    assert.equal(call.has_t, true);
+    assert.equal((await importWebCall(env.sql, id, new Date("2026-10-10T15:05:00+05:30"))).state, "done"); // idempotent
+    assert.equal(tg.messagesTo(CHAT.rohan).length, 1);
+    assert.equal((await importWebCall(env.sql, "webrtc-1-abc", new Date())).state, "unknown");
+  });
+});
