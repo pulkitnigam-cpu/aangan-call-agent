@@ -7,11 +7,11 @@ chases until the promised callback happens, and logs everything for Nikhil's Hub
 dashboard.
 
 **Stack:** Next.js on Vercel · Neon (serverless Postgres, RLS on) · Vaani Voice · Gemini · Telegram ·
-Calendly · HubSpot · Google OAuth · GitHub Actions (the sweep).
+Calendly · HubSpot · GitHub Actions (the sweep).
 
 **Three ways in:**
 - **Nikhil** → HubSpot dashboard ([docs/hubspot-dashboard.md](docs/hubspot-dashboard.md))
-- **Designers** → the Vercel dashboard at `/dashboard`: charts first, click any lead for its full history. Google sign-in only.
+- **Designers** → the Vercel dashboard at `/dashboard`: charts first, click any lead for its full history. No sign-in.
 - **Everyone on the team** → the Telegram bot: ask in plain words ("who's waiting for a call?")
 
 > **Strict rule:** the calling agent answers only from `knowledge/` and the hard rules. See [CLAUDE.md](CLAUDE.md).
@@ -25,7 +25,7 @@ Calendly · HubSpot · Google OAuth · GitHub Actions (the sweep).
 | 3 | Vaani Voice: `/api/voice/webhook`, tools `check-fit` + `callback-times`, `npm run vaani:setup` | done (built from docs.vaanivoice.ai) |
 | 4 | Telegram: lead cards, Accept / Can't take, reassignment, `/log`, **data bot** | done |
 | 5 | Calendly (lead-ID links) · **HubSpot sync** + `hubspot:setup` | done |
-| 6 | Sweep · **designers' dashboard + Google sign-in** · HubSpot dashboard guide | done |
+| 6 | Sweep · **designers' dashboard** (no sign-in) · HubSpot dashboard guide | done |
 | 7 | Create the Vaani agent, number, accounts, launch | together, at setup |
 
 ## How a call flows
@@ -90,8 +90,7 @@ npm run eval                      # real Gemini on all 40 Sep enquiries → docs
 | `POST /api/telegram/webhook` | Telegram, buttons and commands | `TELEGRAM_WEBHOOK_SECRET` header |
 | `POST /api/calendly/webhook` | Calendly, booking/cancel | Calendly signature, 3-min replay window |
 | `GET /api/cron/sweep` | GitHub Actions every 5 min | `Bearer CRON_SECRET` |
-| `GET /api/auth/google`, `/api/auth/callback`, `POST /api/auth/logout` | designers signing in | Google OAuth + signed cookie |
-| `/dashboard`, `/dashboard/leads/[id]` | designers, admins | session, re-checked against `designers.email` on every page |
+| `/dashboard`, `/dashboard/leads/[id]` | the team | none (not indexed by search engines) |
 
 **Why GitHub Actions and not Vercel Cron:** Vercel's free (Hobby) plan only allows crons that run
 **once a day**, and a more frequent schedule fails the deploy. `.github/workflows/sweep.yml` calls
@@ -100,21 +99,17 @@ For to-the-minute timing, point cron-job.org (free) at the same URL.
 
 ## Designers' dashboard
 
-- **Sign-in:** "Sign in with Google" only. There's no sign-up and no password. A designer gets in
-  if their Google email is in `designers.email` (and they're active). `DASHBOARD_ADMIN_EMAILS`
-  can see every designer, plus the tool's running cost. Deactivating a designer locks them out on
-  their next click, not when their cookie expires.
-- **What a designer sees:** only their own leads. Four headline numbers (leads, visits booked,
-  median callback, % on time), leads per day, pipeline, callback speed ("Late" is the only red),
-  and the lead list. Click any lead for its full details, timeline and call transcript.
+- **Address:** `https://aangan-call-agent-rust.vercel.app/dashboard`, with **no sign-in** (owner's decision).
+  Anyone with the link can see it, so the site tells search engines not to index it
+  (`robots` meta + `robots.txt`). Share the link only with the team.
+- **What it shows:** four headline numbers (leads, visits booked, median callback, % on time), leads
+  per day, pipeline, callback speed ("Late" is the only red), the tool's running cost, and the lead
+  list. Pick a designer from the dropdown to see just their leads. Click any lead for its full
+  details, timeline and call transcript. Designers also reach it from "Open in dashboard" on
+  their Telegram lead cards.
 - **Background photo:** "white and brown living room set" by Spacejoy on Unsplash (free licence),
   loaded from Unsplash's CDN. To use one of Nikhil's own project photos instead, save it as
   `public/bg/interior.jpg` (landscape, ~2000px wide); it takes priority automatically.
-- **Google OAuth client:** Google Cloud Console → APIs & Services → OAuth consent screen
-  (Internal if the studio uses Google Workspace, otherwise External + test users) → Credentials →
-  Create OAuth client ID → Web application → authorised redirect URI
-  `https://<app>.vercel.app/api/auth/callback`. Put the ID and secret in `GOOGLE_CLIENT_ID` /
-  `GOOGLE_CLIENT_SECRET`.
 
 ## Telegram bot (data questions)
 
@@ -159,7 +154,6 @@ lib/calendly.ts           booking links with the lead ID, webhook parsing
 lib/hubspot.ts            contacts, deals, stages, tasks (retries on 429/5xx)
 lib/bot.ts                Telegram data bot: plain question → fixed lookup → answer from data
 lib/dashboard.ts          dashboard queries, always scoped to the signed-in designer
-lib/auth/                 Google OAuth, signed session cookie, per-page re-check
 lib/schemas.ts            zod schemas for every external payload
 app/dashboard/            the designers' dashboard; components/dashboard/ charts
 docs/hubspot-dashboard.md Nikhil's HubSpot setup and the reports to build
@@ -178,5 +172,5 @@ tests/                    rubric × 40 Sep enquiries, workflow end to end, guard
 4. Run `npm run db:migrate` against the production database.
 5. Run `npm run hubspot:setup` once and copy the printed ids into Vercel.
    Then `npm run telegram:webhook` (and `npm run calendly:subscribe` on a paid Calendly plan).
-6. Add each designer's Google email to `designers.email`.
+6. Add designers with `POST /api/admin/designers` (Bearer CRON_SECRET): name, Telegram chat ID, areas.
 7. `npm run vaani:setup -- --apply`, then finish the dashboard steps in [agent/README.md](agent/README.md).

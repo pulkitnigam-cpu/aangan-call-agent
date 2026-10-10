@@ -4,7 +4,6 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import "../../../ui.css";
 import { Icon } from "@/components/dashboard/Icons";
-import { getCurrentUser } from "@/lib/auth/current-user";
 import { bookingLink } from "@/lib/calendly";
 import { getLeadDetail } from "@/lib/dashboard";
 import { getSql } from "@/lib/db";
@@ -30,9 +29,8 @@ const str = (v: unknown) => (v === null || v === undefined || v === "" ? null : 
 
 async function Lead({ params }: { params: PageProps<"/dashboard/leads/[id]">["params"] }) {
   await connection();
-  const user = await getCurrentUser();
   const { id } = await params;
-  const detail = await getLeadDetail(getSql(), id, { designerId: user.role === "designer" ? user.designerId : null });
+  const detail = await getLeadDetail(getSql(), id, { designerId: null });
   if (!detail) notFound();
   const { lead: l, events, calls } = detail;
 

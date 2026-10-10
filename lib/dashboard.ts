@@ -1,11 +1,11 @@
 import type postgres from "postgres";
 
-// Data for the designers' dashboard. Every query takes a scope: a designer
-// sees only their own leads; an admin (DASHBOARD_ADMIN_EMAILS) sees everyone's
-// and can filter by designer. Nikhil's business view lives in HubSpot.
+// Data for the designers' dashboard. Every query takes a scope: one designer's
+// leads (the designer picker), or null for the whole studio. There is no
+// sign-in (owner's decision, 10 Oct). Nikhil's business view lives in HubSpot.
 
 export interface Scope {
-  designerId: string | null; // null = all designers (admin only)
+  designerId: string | null; // null = the whole studio
 }
 
 export const RANGES = [7, 30, 90] as const;
@@ -116,7 +116,8 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
   `;
 
   let cost: DashboardData["cost"] = null;
-  let designers: DashboardData["designers"] = [];
+  // The designer picker needs the full list in every view.
+  const designers = await sql<{ id: string; name: string }[]>`select id, name from designers where active order by name`;
   if (!scope.designerId) {
     const [c] = await sql<{ total: string; calls: number; qualified: number; bot: string }[]>`
       select coalesce((select sum(cost_inr) from calls where started_at >= ${since}), 0)::text as total,
@@ -126,7 +127,6 @@ export async function getDashboardData(sql: postgres.Sql, scope: Scope, days: Ra
     `;
     const total = Number(c.total) + Number(c.bot);
     cost = { totalInr: Math.round(total * 100) / 100, calls: c.calls, perQualifiedInr: c.qualified ? Math.round((total / c.qualified) * 100) / 100 : null };
-    designers = await sql<{ id: string; name: string }[]>`select id, name from designers where active order by name`;
   }
 
   return {

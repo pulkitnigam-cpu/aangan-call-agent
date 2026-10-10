@@ -5,7 +5,6 @@ import "../ui.css";
 import { BarList, ColumnChart } from "@/components/dashboard/Charts";
 import { DesignerFilter } from "@/components/dashboard/DesignerFilter";
 import { Icon } from "@/components/dashboard/Icons";
-import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDashboardData, parseRange, RANGES, type LeadRow } from "@/lib/dashboard";
 import { getSql } from "@/lib/db";
 import { fmtMinutes, fmtTime, initials, isUuid, STATUS_LABEL } from "@/lib/format";
@@ -36,11 +35,11 @@ function Skeleton() {
 
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
   await connection(); // "now" is request-time data
-  const user = await getCurrentUser();
   const sp = await searchParams;
   const range = parseRange(typeof sp.range === "string" ? sp.range : undefined);
-  const filter = user.role === "admin" && isUuid(sp.designer) ? sp.designer : null;
-  const designerId = user.role === "designer" ? user.designerId : filter;
+  // No sign-in (owner's decision): everyone sees the studio view and can pick a designer.
+  const filter = isUuid(sp.designer) ? sp.designer : null;
+  const designerId = filter;
   const d = await getDashboardData(getSql(), { designerId }, range);
   const now = new Date();
   const q = (r: number) => `/dashboard?range=${r}${filter ? `&designer=${filter}` : ""}`;
@@ -49,15 +48,13 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard
     <>
       <header className="topbar">
         <div className="brand"><span className="brand-mark">A</span>Aangan</div>
-        <span className="hello">Hi, {user.name.split(" ")[0]}</span>
         <span className="spacer" />
-        {user.role === "admin" && <DesignerFilter designers={d.designers} current={filter} range={range} />}
+        <DesignerFilter designers={d.designers} current={filter} range={range} />
         <nav className="pills" aria-label="Date range">
           {RANGES.map((r) => (
             <Link key={r} href={q(r)} className="pill" aria-current={r === range ? "page" : undefined}>{r}d</Link>
           ))}
         </nav>
-        <form action="/api/auth/logout" method="post"><button className="ghost-btn">Sign out</button></form>
       </header>
 
       <section className="grid-4" aria-label="Key numbers">
@@ -101,7 +98,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard
 
       <section className="card">
         <div className="card-title">Leads <span style={{ fontWeight: 400 }}>{d.leads.length}</span></div>
-        <LeadList leads={d.leads} now={now} showDesigner={user.role === "admin" && !filter} emptyText="No leads in this period yet." />
+        <LeadList leads={d.leads} now={now} showDesigner={!filter} emptyText="No leads in this period yet." />
       </section>
     </>
   );

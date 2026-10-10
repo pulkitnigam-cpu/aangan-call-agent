@@ -15,6 +15,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Aangan Call Agent",
   description: "AI phone receptionist backend for Aangan Studio",
+  // No sign-in, so keep every page out of search engines (client data).
+  robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

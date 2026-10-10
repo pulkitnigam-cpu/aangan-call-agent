@@ -1,0 +1,3 @@
+# Private studio dashboard: do not index anything.
+User-agent: *
+Disallow: /
