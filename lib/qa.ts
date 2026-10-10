@@ -1,6 +1,6 @@
 // Automatic guardrail check for one call — the evidence of how the agent
 // behaved. Runs on the stored transcript and lead, so it works the same for
-// the 56 sample calls and for real calls later.
+// the sample test calls and for real calls later.
 
 import { findPriceMentions } from "./policy";
 
