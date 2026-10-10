@@ -1,4 +1,4 @@
-// Pulls a finished browser test call from Vaani's API and runs it through the
+// Pulls a finished call (browser test calls, or any call whose post-call webhook didn't come) from Vaani's API and runs it through the
 // exact same handler as the webhook (lead, routing, Telegram, HubSpot, report).
 // Used by the test-call page and by `npm run report` (catches any stragglers).
 
@@ -33,14 +33,23 @@ export async function importWebCall(sql: Sql, callId: string, now: Date): Promis
   }
 }
 
-/** Every browser call that ended at least a minute ago and isn't processed yet. */
+/** Every AI call that started at least a minute ago and isn't processed yet (webhook missed or not sent). */
 export async function importPendingWebCalls(sql: Sql, now: Date): Promise<{ callId: string; state: string }[]> {
   const rows = await sql<{ vani_call_id: string }[]>`
     select vani_call_id from calls
-    where vani_call_id like 'webrtc-%' and processed_at is null and started_at < ${new Date(now.getTime() - 60_000)}
+    where vani_call_id is not null and handled_by = 'ai' and processed_at is null and started_at < ${new Date(now.getTime() - 60_000)}
     order by started_at limit 20
   `;
   const out: { callId: string; state: string }[] = [];
   for (const r of rows) out.push({ callId: r.vani_call_id, state: (await importWebCall(sql, r.vani_call_id, now)).state });
   return out;
+}
+
+/** After call_ended: give Vaani time to finish its analysis, then pull it (backup for a missing call_postprocessing). */
+export async function importAfterCallEnded(sql: Sql, callId: string): Promise<void> {
+  for (const waitMs of [15_000, 15_000, 20_000]) {
+    await new Promise((r) => setTimeout(r, waitMs));
+    const r = await importWebCall(sql, callId, new Date());
+    if (r.state !== "waiting") return;
+  }
 }

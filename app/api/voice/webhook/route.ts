@@ -3,7 +3,10 @@ import { getSql } from "@/lib/db";
 import { extractFromTranscript } from "@/lib/gemini";
 import { handleCallEnded, handleCallFinished, handleCallStarted, releaseCallClaim, sweep } from "@/lib/leads";
 import { verifyVaaniWebhook } from "@/lib/security";
+import { importAfterCallEnded } from "@/lib/voice/import";
 import { parseVaaniWebhook } from "@/lib/voice/vani";
+
+export const maxDuration = 60; // room for the post-call backup pull below
 
 // POST /api/voice/webhook?token=… — every Vaani Voice call event (Settings → Webhooks).
 export async function POST(request: Request) {
@@ -26,6 +29,8 @@ export async function POST(request: Request) {
       return Response.json({ ok: true });
     case "ended":
       await handleCallFinished(sql, evt.providerCallId, evt.durationSec, now);
+      // If call_postprocessing arrives first, this finds the call already processed and stops.
+      after(() => importAfterCallEnded(sql, evt.providerCallId).catch((err) => console.error("[post-call pull]", err)));
       return Response.json({ ok: true });
     case "postprocessed":
       try {
