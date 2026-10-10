@@ -1,0 +1,46 @@
+{
+  "name": "aangan-call-agent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/migrate.ts seed",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:seed-demo": "tsx scripts/seed-demo.ts",
+    "hubspot:setup": "tsx scripts/hubspot-setup.ts",
+    "vaani:setup": "tsx scripts/vaani-setup.ts",
+    "eval": "tsx scripts/eval-transcripts.ts",
+    "telegram:webhook": "tsx scripts/telegram-set-webhook.ts",
+    "calendly:subscribe": "tsx scripts/calendly-subscribe.ts"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "postgres": "^3.4.9",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^18.0.6",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,193 @@
+/* Aangan dashboard + sign-in. Calm, photo-backed, chart-first.
+   Chart colors are the validated reference palette (dataviz skill):
+   series blue vs critical red passes CVD + contrast in both modes. */
+
+.aangan {
+  color-scheme: light;
+  --card: rgba(252, 252, 251, 0.93);
+  --card-solid: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11, 11, 11, 0.1);
+  --series-1: #2a78d6;
+  --series-1-soft: #cde2fb;
+  --critical: #d03b3b;
+  --good-text: #006300;
+  --accent: #9a6b47; /* warm wood, brand accent for chrome only (never data) */
+  --chip: rgba(11, 11, 11, 0.05);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .aangan {
+    color-scheme: dark;
+    --card: rgba(26, 26, 25, 0.9);
+    --card-solid: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, 0.1);
+    --series-1: #3987e5;
+    --series-1-soft: #184f95;
+    --critical: #d03b3b;
+    --good-text: #0ca30c;
+    --accent: #d2a37d;
+    --chip: rgba(255, 255, 255, 0.07);
+  }
+}
+:root[data-theme="dark"] .aangan {
+  color-scheme: dark;
+  --card: rgba(26, 26, 25, 0.9);
+  --card-solid: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --ring: rgba(255, 255, 255, 0.1);
+  --series-1: #3987e5;
+  --series-1-soft: #184f95;
+  --good-text: #0ca30c;
+  --accent: #d2a37d;
+  --chip: rgba(255, 255, 255, 0.07);
+}
+
+/* Interior photo behind everything.
+   1. Nikhil's own project photo, if saved at public/bg/interior.jpg (wins: it's on top).
+   2. Otherwise "white and brown living room set" by Spacejoy on Unsplash (free licence),
+      https://unsplash.com/photos/white-and-brown-living-room-set-9M66C_w_ToM — hotlinked
+      from Unsplash's CDN, as their guidelines ask.
+   3. If neither loads, the warm gradient. */
+.aangan.shell {
+  min-height: 100vh;
+  width: 100%;
+  background:
+    linear-gradient(180deg, rgba(18, 14, 10, 0.55), rgba(18, 14, 10, 0.78)),
+    url("/bg/interior.jpg") center / cover no-repeat fixed,
+    url("https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=2400&q=75&auto=format&fit=crop") center / cover no-repeat fixed,
+    radial-gradient(1200px 600px at 15% 0%, #b08060 0%, transparent 60%),
+    linear-gradient(135deg, #6f5240 0%, #3a2c22 55%, #1f1813 100%);
+  background-attachment: fixed;
+  padding: 24px 16px 48px;
+}
+.aangan .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+
+/* Top bar */
+.aangan .topbar { display: flex; align-items: center; gap: 12px; color: #fff; flex-wrap: wrap; }
+.aangan .brand { font-weight: 700; font-size: 20px; letter-spacing: 0.02em; display: flex; align-items: center; gap: 10px; }
+.aangan .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 15px; }
+.aangan .hello { color: rgba(255, 255, 255, 0.8); font-size: 14px; }
+.aangan .spacer { flex: 1; }
+.aangan .pills { display: inline-flex; background: rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 3px; backdrop-filter: blur(8px); }
+.aangan .pill { color: rgba(255, 255, 255, 0.85); font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+.aangan .pill[aria-current="page"] { background: #fff; color: #1b1b1b; font-weight: 600; }
+.aangan .ghost-btn { color: rgba(255, 255, 255, 0.85); background: none; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.aangan .ghost-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.aangan select.ghost-btn option { color: #111; }
+
+/* Cards */
+.aangan .card {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px var(--ring), 0 10px 30px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+  padding: 18px;
+  min-width: 0;
+}
+.aangan .card-title { font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; }
+.aangan .grid-4 { display: grid; gap: 16px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.aangan .grid-2 { display: grid; gap: 16px; grid-template-columns: 1.6fr 1fr; }
+.aangan .grid-2-even { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) {
+  .aangan .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aangan .grid-2, .aangan .grid-2-even { grid-template-columns: 1fr; }
+}
+
+/* Stat tiles */
+.aangan .stat-label { font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+.aangan .stat-value { font-size: 34px; font-weight: 700; line-height: 1.1; margin-top: 6px; }
+.aangan .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.aangan .stat-sub.good { color: var(--good-text); }
+.aangan .stat-sub.bad { color: var(--critical); }
+
+/* Charts */
+.aangan .chart { position: relative; }
+.aangan .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.aangan .chart .tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.aangan .tooltip {
+  position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 10px));
+  background: var(--card-solid); color: var(--ink); box-shadow: 0 0 0 1px var(--ring), 0 6px 18px rgba(0, 0, 0, 0.2);
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; white-space: nowrap; z-index: 2;
+}
+.aangan .tooltip b { font-size: 14px; }
+.aangan .barlist { display: grid; gap: 10px; }
+.aangan .barrow { display: grid; grid-template-columns: 96px 1fr 36px; align-items: center; gap: 10px; font-size: 13px; border-radius: 8px; padding: 2px 4px; }
+.aangan .barrow:hover { background: var(--chip); }
+.aangan .barrow .lbl { color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+.aangan .barrow .val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.aangan .track { height: 14px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+.aangan .fill { height: 100%; border-radius: 4px; background: var(--series-1); transition: width 0.4s ease; }
+.aangan .fill.late { background: var(--critical); }
+.aangan .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Lead list */
+.aangan .leads { display: grid; gap: 8px; }
+.aangan .lead {
+  display: grid; grid-template-columns: 38px 1fr auto auto; gap: 12px; align-items: center;
+  padding: 10px 12px; border-radius: 12px; background: var(--chip); transition: transform 0.12s ease, background 0.12s ease;
+}
+.aangan .lead:hover { transform: translateY(-1px); background: rgba(154, 107, 71, 0.12); }
+.aangan .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; }
+.aangan .lead-name { font-weight: 600; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+.aangan .lead-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.aangan .tag { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--chip); color: var(--ink-2); white-space: nowrap; display: inline-flex; gap: 5px; align-items: center; }
+.aangan .tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--series-1); }
+.aangan .tag.late { color: var(--critical); }
+.aangan .tag.late .dot { background: var(--critical); }
+.aangan .tag.done .dot { background: var(--good-text); }
+.aangan .empty { color: var(--muted); font-size: 13px; padding: 24px; text-align: center; }
+@media (max-width: 600px) {
+  .aangan .lead { grid-template-columns: 38px 1fr auto; }
+  .aangan .lead .hide-sm { display: none; }
+}
+
+/* Lead detail */
+.aangan .back { color: rgba(255, 255, 255, 0.85); font-size: 14px; }
+.aangan .hero { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.aangan .hero .avatar { width: 56px; height: 56px; font-size: 22px; }
+.aangan .hero h1 { font-size: 24px; }
+.aangan .phone { font-size: 15px; color: var(--series-1); font-weight: 600; }
+.aangan .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.aangan .fact { background: var(--chip); border-radius: 12px; padding: 10px 12px; }
+.aangan .fact-k { font-size: 11px; color: var(--muted); display: flex; gap: 6px; align-items: center; text-transform: uppercase; letter-spacing: 0.04em; }
+.aangan .fact-v { font-size: 14px; font-weight: 600; margin-top: 4px; }
+.aangan .timeline { display: grid; gap: 0; }
+.aangan .tl { display: grid; grid-template-columns: 16px 1fr auto; gap: 10px; font-size: 13px; padding: 6px 0; position: relative; }
+.aangan .tl::before { content: ""; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: var(--grid); }
+.aangan .tl .pt { width: 10px; height: 10px; border-radius: 50%; background: var(--series-1); margin: 4px 0 0 3px; position: relative; box-shadow: 0 0 0 2px var(--card-solid); }
+.aangan .tl .when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.aangan details.transcript { margin-top: 10px; }
+.aangan details.transcript summary { cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.aangan details.transcript pre { white-space: pre-wrap; font: inherit; font-size: 13px; line-height: 1.55; color: var(--ink-2); margin-top: 8px; max-height: 360px; overflow: auto; }
+.aangan .btn {
+  display: inline-flex; align-items: center; gap: 8px; background: var(--series-1); color: #fff; border-radius: 10px;
+  padding: 9px 14px; font-size: 14px; font-weight: 600; border: 0; cursor: pointer;
+}
+.aangan .note { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.aangan .warn { color: var(--critical); }
+
+/* Sign-in */
+.aangan.login { display: grid; place-items: center; }
+.aangan .login-card { width: min(420px, 100%); text-align: center; padding: 36px 28px; }
+.aangan .login-card h1 { font-size: 22px; margin: 14px 0 6px; }
+.aangan .login-card p { color: var(--ink-2); font-size: 14px; }
+.aangan .google-btn {
+  margin-top: 24px; display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; border-radius: 10px;
+  background: #fff; color: #1f1f1f; font-weight: 600; font-size: 15px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.aangan .google-btn:hover { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.12); }
+.aangan .login-error { margin-top: 16px; font-size: 13px; color: var(--critical); }

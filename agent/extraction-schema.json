@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AanganCallExtraction",
+  "description": "Fields extracted from one call. Use null when the caller didn't say. Never guess. The backend re-scores the lead from these facts (lib/policy.ts).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "category",
+    "language",
+    "recording_consent",
+    "name",
+    "area",
+    "project_kind",
+    "scope_kind",
+    "room_count",
+    "bhk",
+    "scope",
+    "intent",
+    "size_sqft",
+    "current_state",
+    "site_available_in_weeks",
+    "timeline",
+    "deadline_date",
+    "budget_text",
+    "budget_max_inr",
+    "decision_maker",
+    "rented",
+    "source",
+    "consultation_preference",
+    "escalate",
+    "escalation_reason",
+    "priority",
+    "open_questions",
+    "score",
+    "summary",
+    "callback_phone",
+    "promised_outcome"
+  ],
+  "properties": {
+    "category": {
+      "enum": [
+        "new_project",
+        "existing_client",
+        "vendor",
+        "spam"
+      ]
+    },
+    "language": {
+      "enum": [
+        "en",
+        "hi",
+        "mr",
+        "mixed"
+      ]
+    },
+    "recording_consent": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "callback_phone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The number the caller asked to be called on, if they gave one (digits). null if they confirmed the number they're calling from."
+    },
+    "area": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Where the project site is (not where the caller lives), written in English letters even if the caller spoke Hindi or Marathi, e.g. 'Kothrud, Dahanukar Colony'."
+    },
+    "project_kind": {
+      "enum": [
+        "home",
+        "office",
+        "clinic",
+        "studio",
+        "restaurant",
+        "hotel",
+        "retail",
+        "gym",
+        "other",
+        "unknown"
+      ]
+    },
+    "scope_kind": {
+      "enum": [
+        "full_home",
+        "partial_home",
+        "single_room",
+        "commercial_fitout",
+        "unknown"
+      ]
+    },
+    "room_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Rooms in scope, counting the kitchen, when not a full home."
+    },
+    "bhk": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Homes only: 2BHK -> 2. null for offices or if not said."
+    },
+    "scope": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "What they want done, in a few words, e.g. 'modular kitchen, wardrobes in 2 bedrooms, living room'."
+    },
+    "intent": {
+      "enum": [
+        "design_and_execution",
+        "advice_only",
+        "self_execution",
+        "furniture_only",
+        "vastu_only",
+        "structural_only",
+        "exploring",
+        "unknown"
+      ],
+      "description": "design_and_execution = they want the studio to design AND carry out the work (also when someone calls on behalf of the owners about a real project). exploring = no project planned yet (\"just exploring\", \"early stage\", \"maybe later\"). advice_only = wants ideas or a consultation without execution."
+    },
+    "size_sqft": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Carpet area in sq ft."
+    },
+    "current_state": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "e.g. 'bare shell', 'builder flat, lived in 2 years', 'possession in 6 weeks'."
+    },
+    "site_available_in_weeks": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "0 if the site is available now."
+    },
+    "timeline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Timeline in the caller's words."
+    },
+    "deadline_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "YYYY-MM-DD the project must be complete by, always on or after the call date. A month alone means the last day of its NEXT occurrence (said in October, 'March' = next March). Relative dates ('in 3 weeks', 'before Diwali') are resolved from the call date. null if no deadline was given."
+    },
+    "budget_text": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Only if the caller volunteered it, in their words."
+    },
+    "budget_max_inr": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Upper end of a volunteered budget in rupees (e.g. '10-12 lakh' -> 1200000)."
+    },
+    "decision_maker": {
+      "enum": [
+        "self",
+        "authorised",
+        "research_only",
+        "not_authorised",
+        "unknown"
+      ],
+      "description": "self = owner/founder deciding; authorised = the decider has authorised them; research_only = checking on behalf of the owners, who will decide/attend; not_authorised = clearly cannot move forward."
+    },
+    "rented": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "How they heard of us. Keep referral names exactly."
+    },
+    "consultation_preference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "e.g. 'weekends only', 'weekdays after 6pm', 'site visit preferred'."
+    },
+    "promised_outcome": {
+      "enum": [
+        "designer_callback",
+        "front_desk_callback",
+        "declined",
+        "escalated",
+        "none"
+      ],
+      "description": "What the agent actually TOLD the caller would happen at the end of the call. 'none' if the call ended before a close."
+    },
+    "escalate": {
+      "type": "boolean",
+      "description": "Existing client who is upset or needs a senior person."
+    },
+    "escalation_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "priority": {
+      "type": "boolean",
+      "description": "Caller was let down before (no callback) or is a VIP referral."
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Questions the caller asked that the designer should answer."
+    },
+    "score": {
+      "enum": [
+        "qualified",
+        "not_fit",
+        "unclear",
+        null
+      ],
+      "description": "The agent's own call. null for non-new-project calls."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Three short lines for the designer: who and where; what and how big; timeline and anything to watch for."
+    }
+  }
+}
